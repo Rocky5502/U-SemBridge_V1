@@ -13,7 +13,9 @@ PLACEHOLDERS = {"", "TBD", "NA_PLACEHOLDER", "RUN", "DATASET", "MODEL", "METHOD"
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Validate real U-SemBridge per-example outputs")
+    parser = argparse.ArgumentParser(
+        description="Validate real U-SemBridge per-example outputs"
+    )
     parser.add_argument("--input", default="results/per_example.csv")
     args = parser.parse_args()
 
@@ -34,9 +36,15 @@ def main() -> None:
             raise SystemExit(f"Null values found in key column: {col}")
         bad = df[col].astype(str).str.strip().isin(PLACEHOLDERS)
         if bad.any():
-            raise SystemExit(f"Placeholder value found in key column {col}: row {bad.idxmax()}")
+            raise SystemExit(
+                f"Placeholder value found in key column {col}: row {bad.idxmax()}"
+            )
 
-    duplicate_keys = [c for c in ("run_id", "dataset", "model", "method", "example_id", "seed") if c in df]
+    duplicate_keys = [
+        c
+        for c in ("run_id", "dataset", "model", "method", "example_id", "seed")
+        if c in df
+    ]
     if df.duplicated(duplicate_keys).any():
         raise SystemExit(f"Duplicate per-example keys found: {duplicate_keys}")
 
@@ -46,10 +54,15 @@ def main() -> None:
 
     for col in ("logical_equivalent", "semantic_error"):
         values = pd.to_numeric(df[col], errors="coerce")
-        if values.isna().any() or not set(values.astype(int).unique()).issubset({0, 1}):
+        if values.isna().any() or not set(values.unique()).issubset({0.0, 1.0}):
             raise SystemExit(f"{col} must contain only binary 0/1 values")
 
-    for col in ("u_grounding", "u_structural", "u_completeness", "u_solver_sensitivity"):
+    for col in (
+        "u_grounding",
+        "u_structural",
+        "u_completeness",
+        "u_solver_sensitivity",
+    ):
         if col not in df:
             continue
         values = pd.to_numeric(df[col], errors="coerce")
