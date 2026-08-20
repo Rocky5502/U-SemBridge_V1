@@ -1,0 +1,2 @@
+run_id,dataset,model,method,llm_calls,solver_calls,latency_s,input_tokens,output_tokens,peak_memory_gb,expert_seconds,seed
+RUN,DATASET,MODEL,METHOD,,,,,,,,42
