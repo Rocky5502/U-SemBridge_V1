@@ -27,6 +27,34 @@ def _require(path: Path) -> pd.DataFrame:
     return df
 
 
+def _filter_slice(
+    df: pd.DataFrame,
+    *,
+    dataset: str | None,
+    model: str | None,
+    run_id: str | None,
+) -> pd.DataFrame:
+    out = df.copy()
+    for column, value in (("dataset", dataset), ("model", model), ("run_id", run_id)):
+        if value is None:
+            continue
+        if column not in out.columns:
+            raise SystemExit(f"Cannot filter on missing column: {column}")
+        out = out[out[column].astype(str) == value]
+    if out.empty:
+        raise SystemExit("No result rows remain after plot filtering")
+
+    identity = [c for c in ("dataset", "model", "run_id", "seed") if c in out.columns]
+    if identity:
+        combinations = out[identity].drop_duplicates()
+        if len(combinations) > 1:
+            raise SystemExit(
+                "Plot input contains multiple evaluation slices. Pass --dataset, --model, "
+                "and/or --run-id so manuscript curves do not mix unrelated runs."
+            )
+    return out
+
+
 def risk_coverage(df: pd.DataFrame) -> None:
     required = {"method", "risk_score", "semantic_error"}
     if not required.issubset(df.columns):
@@ -98,7 +126,7 @@ def component_diagnostics(df: pd.DataFrame) -> None:
     if not data:
         plt.close(fig)
         return
-    ax.boxplot(data, labels=labels, showfliers=False)
+    ax.boxplot(data, tick_labels=labels, showfliers=False)
     ax.set_ylabel("Uncertainty score")
     ax.tick_params(axis="x", labelrotation=25)
     fig.tight_layout()
@@ -126,13 +154,23 @@ def error_breakdown(df: pd.DataFrame) -> None:
 
 
 def cost_frontier(summary: pd.DataFrame, eff: pd.DataFrame) -> None:
-    merged = summary.merge(eff, on=["dataset", "model", "method"], how="inner")
-    if "le" not in merged or "latency_s" not in merged:
+    merge_keys = [
+        c
+        for c in ("run_id", "dataset", "model", "method", "seed")
+        if c in summary.columns and c in eff.columns
+    ]
+    required_keys = {"dataset", "model", "method"}
+    if not required_keys.issubset(merge_keys):
+        raise SystemExit("Summary and efficiency tables need dataset/model/method keys")
+    merged = summary.merge(eff, on=merge_keys, how="inner", validate="one_to_one")
+    if "le" not in merged.columns or "latency_s" not in merged.columns:
         raise SystemExit("Need `le` and `latency_s` for cost frontier")
     fig, ax = plt.subplots(figsize=(5.0, 3.4))
     for _, row in merged.dropna(subset=["le", "latency_s"]).iterrows():
         ax.scatter(row["latency_s"], row["le"])
-        ax.annotate(str(row["method"]), (row["latency_s"], row["le"]), fontsize=7)
+        ax.annotate(
+            str(row["method"]), (row["latency_s"], row["le"]), fontsize=7
+        )
     ax.set_xlabel("Latency per item (s)")
     ax.set_ylabel("Logical equivalence")
     fig.tight_layout()
@@ -143,22 +181,47 @@ def cost_frontier(summary: pd.DataFrame, eff: pd.DataFrame) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--bins", type=int, default=10)
+    parser.add_argument("--dataset")
+    parser.add_argument("--model")
+    parser.add_argument("--run-id")
     args = parser.parse_args()
 
-    per = _require(RESULTS / "per_example.csv")
+    per = _filter_slice(
+        _require(RESULTS / "per_example.csv"),
+        dataset=args.dataset,
+        model=args.model,
+        run_id=args.run_id,
+    )
     risk_coverage(per)
     reliability(per, bins=args.bins)
     component_diagnostics(per)
+
     if (RESULTS / "semantic_errors.csv").exists():
-        error_breakdown(_require(RESULTS / "semantic_errors.csv"))
+        semantic = _filter_slice(
+            _require(RESULTS / "semantic_errors.csv"),
+            dataset=args.dataset,
+            model=args.model,
+            run_id=args.run_id,
+        )
+        error_breakdown(semantic)
+
     if (
         (RESULTS / "summary_metrics.csv").exists()
         and (RESULTS / "efficiency.csv").exists()
     ):
-        cost_frontier(
+        summary = _filter_slice(
             _require(RESULTS / "summary_metrics.csv"),
-            _require(RESULTS / "efficiency.csv"),
+            dataset=args.dataset,
+            model=args.model,
+            run_id=args.run_id,
         )
+        efficiency = _filter_slice(
+            _require(RESULTS / "efficiency.csv"),
+            dataset=args.dataset,
+            model=args.model,
+            run_id=args.run_id,
+        )
+        cost_frontier(summary, efficiency)
     print(f"Wrote manuscript figures to {FIGURES.resolve()}")
 
 
