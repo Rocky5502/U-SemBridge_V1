@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from usembridge.results import (
     aggregate_summary,
@@ -45,9 +46,14 @@ def test_summary_and_selective():
     summary = aggregate_summary(df)
     assert set(summary["method"]) == {"A", "B"}
     assert summary.loc[summary["method"] == "A", "le"].iloc[0] == 0.5
-    selective = selective_policy_table(df, coverages=(0.5,))
+    selective = selective_policy_table(
+        df,
+        coverages=(0.5,),
+        high_confidence_risk_threshold=0.25,
+    )
     assert len(selective) == 2
     assert selective["realized_coverage"].eq(0.5).all()
+    assert selective["high_confidence_risk_threshold"].eq(0.25).all()
 
 
 def test_component_auroc():
@@ -65,3 +71,16 @@ def test_paired_statistics():
     test = mcnemar_exact(df, method_a="A", method_b="B")
     assert test["n_pairs"] == 4
     assert 0 <= test["p_value"] <= 1
+
+
+def test_paired_statistics_reject_duplicate_example_ids():
+    df = pd.concat([_df(), _df().iloc[[0]]], ignore_index=True)
+    with pytest.raises(ValueError, match="single dataset/model/run/seed"):
+        paired_bootstrap_delta(df, method_a="A", method_b="B", n_boot=10)
+
+
+def test_summary_rejects_fractional_binary_labels():
+    df = _df()
+    df.loc[0, "semantic_error"] = 0.5
+    with pytest.raises(ValueError, match="binary outcome"):
+        aggregate_summary(df)
