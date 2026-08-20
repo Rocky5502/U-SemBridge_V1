@@ -1,0 +1,2 @@
+run_id,dataset,model,method,example_id,gold_label,pred_label,logical_equivalent,semantic_error,risk_score,accepted,action,error_class,solver_executable,u_grounding,u_structural,u_completeness,u_solver_sensitivity,latency_s,input_tokens,output_tokens,solver_calls,seed
+RUN,DATASET,MODEL,METHOD,ID,,,,,,,,,,,,,,,,,,42
