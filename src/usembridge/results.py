@@ -59,13 +59,20 @@ def _require_columns(df: pd.DataFrame, required: Iterable[str]) -> None:
 def _as_binary(series: pd.Series) -> np.ndarray:
     if series.dtype == bool:
         return series.astype(int).to_numpy()
-    return series.astype(float).round().astype(int).to_numpy()
+    values = pd.to_numeric(series, errors="raise").to_numpy(dtype=float)
+    if not set(np.unique(values)).issubset({0.0, 1.0}):
+        raise ValueError("binary outcome column must contain only 0/1 values")
+    return values.astype(int)
 
 
 def aggregate_summary(per_example: pd.DataFrame) -> pd.DataFrame:
     """Build one aggregate row per dataset/model/method/run from real outputs."""
     _require_columns(per_example, REQUIRED_PER_EXAMPLE)
-    group_cols = [c for c in ("run_id", "dataset", "model", "method", "seed") if c in per_example]
+    group_cols = [
+        c
+        for c in ("run_id", "dataset", "model", "method", "seed")
+        if c in per_example
+    ]
     rows: list[dict[str, object]] = []
 
     for keys, g in per_example.groupby(group_cols, dropna=False):
@@ -84,11 +91,13 @@ def aggregate_summary(per_example: pd.DataFrame) -> pd.DataFrame:
             le=float(logical_equivalent.mean()),
             answer_accuracy=float(answer_correct.mean()),
             semantic_error_rate=float(semantic_error.mean()),
-            ece=float(expected_calibration_error(risk.tolist(), semantic_error.tolist())),
+            ece=float(
+                expected_calibration_error(risk.tolist(), semantic_error.tolist())
+            ),
             aurc=float(aurc(risk.tolist(), semantic_error.tolist())),
         )
 
-        if "solver_executable" in g:
+        if "solver_executable" in g.columns:
             row["executable_rate"] = float(_as_binary(g["solver_executable"]).mean())
         else:
             row["executable_rate"] = np.nan
@@ -106,10 +115,18 @@ def aggregate_summary(per_example: pd.DataFrame) -> pd.DataFrame:
 def selective_policy_table(
     per_example: pd.DataFrame,
     coverages: Sequence[float] = (0.80, 0.90, 0.95),
+    *,
+    high_confidence_risk_threshold: float = 0.20,
 ) -> pd.DataFrame:
     """Compute matched-coverage metrics by accepting lowest-risk examples first."""
     _require_columns(per_example, REQUIRED_PER_EXAMPLE)
-    group_cols = [c for c in ("run_id", "dataset", "model", "method", "seed") if c in per_example]
+    if not 0 <= high_confidence_risk_threshold <= 1:
+        raise ValueError("high_confidence_risk_threshold must lie in [0, 1]")
+    group_cols = [
+        c
+        for c in ("run_id", "dataset", "model", "method", "seed")
+        if c in per_example
+    ]
     rows: list[dict[str, object]] = []
 
     for keys, g in per_example.groupby(group_cols, dropna=False):
@@ -128,7 +145,12 @@ def selective_policy_table(
                 accepted["pred_label"].astype(str) == accepted["gold_label"].astype(str)
             ).astype(int).to_numpy()
             wrong = accepted[accepted["semantic_error"].astype(float) >= 0.5]
-            high_conf_wrong = int((wrong["risk_score"].astype(float) <= 0.20).sum())
+            high_conf_wrong = int(
+                (
+                    wrong["risk_score"].astype(float)
+                    <= high_confidence_risk_threshold
+                ).sum()
+            )
             row = dict(base)
             row.update(
                 target_coverage=float(coverage),
@@ -137,6 +159,9 @@ def selective_policy_table(
                 semantic_error_rate=float(semantic_error.mean()),
                 answer_accuracy=float(answer_correct.mean()),
                 high_confidence_wrong=high_conf_wrong,
+                high_confidence_risk_threshold=float(
+                    high_confidence_risk_threshold
+                ),
             )
             rows.append(row)
 
@@ -145,22 +170,32 @@ def selective_policy_table(
 
 def semantic_error_breakdown(per_example: pd.DataFrame) -> pd.DataFrame:
     _require_columns(per_example, REQUIRED_PER_EXAMPLE | {"error_class"})
-    group_cols = [c for c in ("run_id", "dataset", "model", "method", "seed") if c in per_example]
+    group_cols = [
+        c
+        for c in ("run_id", "dataset", "model", "method", "seed")
+        if c in per_example
+    ]
     rows: list[dict[str, object]] = []
 
     for keys, g in per_example.groupby(group_cols, dropna=False):
         if not isinstance(keys, tuple):
             keys = (keys,)
         base = dict(zip(group_cols, keys))
-        denom = max(1, int((g["semantic_error"].astype(float) >= 0.5).sum()))
+        error_mask = g["semantic_error"].astype(float) >= 0.5
+        denom = max(1, int(error_mask.sum()))
         counts = (
-            g.loc[g["semantic_error"].astype(float) >= 0.5, "error_class"]
+            g.loc[error_mask, "error_class"]
             .fillna("unclassified")
+            .replace("", "unclassified")
             .value_counts()
         )
         for error_class, count in counts.items():
             row = dict(base)
-            row.update(error_class=str(error_class), count=int(count), rate=float(count / denom))
+            row.update(
+                error_class=str(error_class),
+                count=int(count),
+                rate=float(count / denom),
+            )
             rows.append(row)
 
     return pd.DataFrame(rows)
@@ -170,9 +205,15 @@ def uncertainty_component_auroc(per_example: pd.DataFrame) -> pd.DataFrame:
     _require_columns(per_example, REQUIRED_PER_EXAMPLE)
     available = [c for c in UQ_COLUMNS if c in per_example.columns]
     if not available:
-        return pd.DataFrame(columns=["dataset", "model", "method", "component", "auroc"])
+        return pd.DataFrame(
+            columns=["dataset", "model", "method", "component", "auroc"]
+        )
 
-    group_cols = [c for c in ("run_id", "dataset", "model", "method", "seed") if c in per_example]
+    group_cols = [
+        c
+        for c in ("run_id", "dataset", "model", "method", "seed")
+        if c in per_example
+    ]
     rows: list[dict[str, object]] = []
     for keys, g in per_example.groupby(group_cols, dropna=False):
         if not isinstance(keys, tuple):
@@ -192,6 +233,32 @@ def uncertainty_component_auroc(per_example: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _paired_frames(
+    per_example: pd.DataFrame,
+    *,
+    method_a: str,
+    method_b: str,
+    metric: str,
+) -> pd.DataFrame:
+    """Return one-to-one paired rows; caller must prefilter to one evaluation slice."""
+    _require_columns(per_example, {"example_id", "method", metric})
+    a = per_example.loc[
+        per_example["method"] == method_a, ["example_id", metric]
+    ].rename(columns={metric: "a"})
+    b = per_example.loc[
+        per_example["method"] == method_b, ["example_id", metric]
+    ].rename(columns={metric: "b"})
+    if a["example_id"].duplicated().any() or b["example_id"].duplicated().any():
+        raise ValueError(
+            "paired analysis requires one row per example and method; filter to a "
+            "single dataset/model/run/seed before comparing methods"
+        )
+    pairs = a.merge(b, on="example_id", how="inner", validate="one_to_one").dropna()
+    if pairs.empty:
+        raise ValueError("no paired examples found")
+    return pairs
+
+
 def paired_bootstrap_delta(
     per_example: pd.DataFrame,
     *,
@@ -202,16 +269,14 @@ def paired_bootstrap_delta(
     seed: int = 42,
 ) -> BootstrapResult:
     """Paired bootstrap confidence interval for method A minus method B."""
-    _require_columns(per_example, {"example_id", "method", metric})
-    a = per_example.loc[
-        per_example["method"] == method_a, ["example_id", metric]
-    ].rename(columns={metric: "a"})
-    b = per_example.loc[
-        per_example["method"] == method_b, ["example_id", metric]
-    ].rename(columns={metric: "b"})
-    pairs = a.merge(b, on="example_id", how="inner").dropna()
-    if pairs.empty:
-        raise ValueError("no paired examples found")
+    if n_boot <= 0:
+        raise ValueError("n_boot must be positive")
+    pairs = _paired_frames(
+        per_example,
+        method_a=method_a,
+        method_b=method_b,
+        metric=metric,
+    )
 
     a_values = pairs["a"].astype(float).to_numpy()
     b_values = pairs["b"].astype(float).to_numpy()
@@ -234,23 +299,21 @@ def mcnemar_exact(
     metric: str = "logical_equivalent",
 ) -> dict[str, float | int]:
     """Exact two-sided McNemar test for paired binary outcomes."""
-    _require_columns(per_example, {"example_id", "method", metric})
-    a = per_example.loc[
-        per_example["method"] == method_a, ["example_id", metric]
-    ].rename(columns={metric: "a"})
-    b = per_example.loc[
-        per_example["method"] == method_b, ["example_id", metric]
-    ].rename(columns={metric: "b"})
-    pairs = a.merge(b, on="example_id", how="inner").dropna()
-    if pairs.empty:
-        raise ValueError("no paired examples found")
+    pairs = _paired_frames(
+        per_example,
+        method_a=method_a,
+        method_b=method_b,
+        metric=metric,
+    )
     av = _as_binary(pairs["a"])
     bv = _as_binary(pairs["b"])
     b_only = int(np.sum((av == 0) & (bv == 1)))
     a_only = int(np.sum((av == 1) & (bv == 0)))
     discordant = a_only + b_only
-    p_value = 1.0 if discordant == 0 else float(
-        binomtest(min(a_only, b_only), discordant, 0.5).pvalue
+    p_value = (
+        1.0
+        if discordant == 0
+        else float(binomtest(min(a_only, b_only), discordant, 0.5).pvalue)
     )
     return {
         "a_only_correct": a_only,
