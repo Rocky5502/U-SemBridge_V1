@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "U-SemBridge Controlled Intermediate Representation",
+  "type": "object",
+  "required": ["instance_id", "rules", "facts", "query", "unresolved_assumptions", "provenance"],
+  "properties": {
+    "instance_id": {"type": "string", "minLength": 1},
+    "entities": {"type": "array", "items": {"type": "object"}},
+    "rules": {"type": "array", "items": {"$ref": "#/$defs/statement"}},
+    "facts": {"type": "array", "items": {"$ref": "#/$defs/statement"}},
+    "query": {"type": "object", "required": ["predicate"], "additionalProperties": true},
+    "unresolved_assumptions": {"type": "array", "items": {"type": "object"}},
+    "provenance": {"type": "array", "items": {"type": "object", "required": ["source_id"]}},
+    "metadata": {"type": "object"}
+  },
+  "$defs": {
+    "statement": {
+      "type": "object",
+      "required": ["id", "kind", "provenance_ids"],
+      "properties": {
+        "id": {"type": "string"},
+        "kind": {"enum": ["fact", "rule"]},
+        "provenance_ids": {"type": "array", "items": {"type": "string"}},
+        "predicate": {"type": "string"},
+        "arguments": {"type": "array"},
+        "body": {"type": ["object", "array", "string", "null"]},
+        "head": {"type": ["object", "string", "null"]}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

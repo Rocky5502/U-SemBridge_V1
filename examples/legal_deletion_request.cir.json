@@ -1,0 +1,19 @@
+{
+  "instance_id": "legal-demo-001",
+  "entities": [{"id": "company_a", "type": "Controller"}, {"id": "user_u", "type": "DataSubject"}],
+  "facts": [
+    {"id": "f1", "kind": "fact", "predicate": "valid_request", "arguments": ["company_a", "user_u"], "provenance_ids": ["s1"]},
+    {"id": "f2", "kind": "fact", "predicate": "deadline_passed", "arguments": ["company_a", "user_u"], "provenance_ids": ["s2"]},
+    {"id": "f3", "kind": "fact", "predicate": "exception_recorded", "arguments": ["company_a", "user_u"], "negated": true, "provenance_ids": ["s3"]}
+  ],
+  "rules": [{"id": "r1", "kind": "rule", "body": {"all": ["valid_request(C,U)", "deadline_passed(C,U)", "not exception_applies(C,U)"]}, "head": "violation(C,U)", "provenance_ids": ["law1"]}],
+  "query": {"predicate": "violation", "arguments": ["company_a", "user_u"]},
+  "unresolved_assumptions": [{"id": "a1", "description": "No exception is recorded does not establish that no exception applies.", "critical": true}],
+  "provenance": [
+    {"source_id": "law1", "text": "If a valid request exists, the deadline passed, and no exception applies, then a violation occurs."},
+    {"source_id": "s1", "text": "Company A received a valid request."},
+    {"source_id": "s2", "text": "The deadline passed."},
+    {"source_id": "s3", "text": "No exception is recorded."}
+  ],
+  "metadata": {"illustrative_only": true, "domain": "legal-style"}
+}

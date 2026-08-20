@@ -1,0 +1,4 @@
+model_id: mistralai/Mistral-7B-Instruct-v0.3
+dtype: auto
+device_map: auto
+trust_remote_code: false

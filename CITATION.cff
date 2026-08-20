@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+title: "U-SemBridge: Uncertainty-Aware Neuro-Symbolic Translation for Explainable and Verifiable Decision Reasoning"
+message: "If you use this research code, please cite the repository and the eventual paper when available."
+type: software
+authors:
+  - family-names: Sah
+    given-names: Chandan Kumar
+repository-code: "https://github.com/Rocky5502/U-SemBridge_V1"
+license: "NOASSERTION"
+version: "0.1.0-pre"
+date-released: 2026-08-20

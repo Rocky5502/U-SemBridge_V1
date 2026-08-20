@@ -1,0 +1,7 @@
+name: smoke
+seed: 42
+candidate_count: 3
+policy:
+  verify_max_risk: 0.25
+  repair_max_risk: 0.55
+  clarify_max_risk: 0.80

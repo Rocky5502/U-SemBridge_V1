@@ -1,0 +1,8 @@
+experiment,dataset,model,k,temperature,seeds,status
+smoke,synthetic,none,3,0.0,42,ready
+baseline_direct,folio,mistral7b,1,0.0,41|42|43,planned
+baseline_direct,folio,qwen25_7b,1,0.0,41|42|43,planned
+usembridge,folio,mistral7b,3,0.7,41|42|43,planned
+usembridge,folio,qwen25_7b,3,0.7,41|42|43,planned
+usembridge,proofwriter,mistral7b,3,0.7,41|42|43,planned
+usembridge,proofwriter,qwen25_7b,3,0.7,41|42|43,planned

@@ -1,0 +1,5 @@
+name: proofwriter
+reference_repo: https://github.com/teacherpeterpan/Logic-LLM.git
+reference_subdir: data/ProofWriter
+semantics: open_world
+notes: "Keep Unknown distinct from False. Logic-LM preprocessing is a reference baseline source, not canonical gold provenance."

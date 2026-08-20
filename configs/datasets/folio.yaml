@@ -1,0 +1,7 @@
+name: folio
+source_repo: https://github.com/Yale-LILY/FOLIO.git
+source_subdir: data/v0.0
+files:
+  train: folio-train.jsonl
+  validation: folio-validation.jsonl
+notes: "Preserve upstream splits; do not tune on evaluation data."

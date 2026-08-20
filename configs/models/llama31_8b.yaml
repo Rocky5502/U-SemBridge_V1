@@ -1,0 +1,5 @@
+model_id: meta-llama/Llama-3.1-8B-Instruct
+dtype: auto
+device_map: auto
+trust_remote_code: false
+requires_access: true

@@ -1,0 +1,7 @@
+name: main_folio
+dataset: folio
+models: [mistral7b, qwen25_7b]
+candidate_counts: [1, 3, 5]
+seeds: [41, 42, 43]
+calibration_split: validation
+report_error_taxonomy: true

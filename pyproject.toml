@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "usembridge"
+version = "0.1.0"
+description = "Uncertainty-aware neuro-symbolic semantic translation research scaffold"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{name = "Chandan Kumar Sah"}]
+dependencies = [
+  "numpy>=1.26",
+  "pandas>=2.2",
+  "scikit-learn>=1.5",
+  "scipy>=1.13",
+  "pyyaml>=6.0",
+  "jsonschema>=4.23",
+  "z3-solver>=4.13",
+  "tqdm>=4.66",
+  "rich>=13.9",
+]
+
+[project.optional-dependencies]
+llm = [
+  "torch>=2.4",
+  "transformers>=4.48",
+  "accelerate>=1.2",
+  "datasets>=3.2",
+  "huggingface-hub>=0.27",
+  "safetensors>=0.4",
+  "sentencepiece>=0.2",
+  "protobuf>=5.28",
+]
+dev = ["pytest>=8.3", "pytest-cov>=6.0", "ruff>=0.8"]
+plot = ["matplotlib>=3.9"]
+
+[project.scripts]
+usembridge = "usembridge.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
