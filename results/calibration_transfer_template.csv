@@ -1,0 +1,2 @@
+run_id,source_dataset,target_dataset,source_model,target_model,method,ece,brier,error_auroc,aurc,seed
+RUN,FOLIO,ProofWriter,SOURCE_MODEL,TARGET_MODEL,U-SemBridge,,,,,42
