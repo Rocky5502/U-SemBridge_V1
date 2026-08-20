@@ -10,7 +10,7 @@ The project treats semantic translation as an uncertainty and assurance problem.
 
 Paper-in-progress for the IJUFKS special issue **Neuro-Symbolic Computing for Explainable, Ethical, and Interpretable Intelligent Systems**.
 
-**Pre-experiment status:** code, configs, data acquisition, tests, CI, and reproducibility controls are prepared. Numerical results remain intentionally TBD until real runs are completed.
+**Pre-experiment status:** the implementation scaffold, configs, data acquisition, tests, CI, reproducibility controls, and the V3 result-analysis pipeline are prepared. Numerical results remain intentionally TBD until real runs are completed.
 
 ## Core claim to test
 
@@ -62,7 +62,34 @@ Initial open models:
 - `Qwen/Qwen2.5-7B-Instruct`
 - `meta-llama/Llama-3.1-8B-Instruct` if access/license permits
 
-See `docs/EXPERIMENTS.md`, `docs/PROJECT_PLAN.md`, and `configs/`.
+See `docs/EXPERIMENTS.md`, `docs/PROJECT_PLAN.md`, `docs/RESULTS_PROTOCOL.md`, and `configs/`.
+
+## V3 result pipeline
+
+The code now mirrors the manuscript's RQ-oriented Results section. Every final table or figure must originate from frozen machine-readable outputs.
+
+Primary result surfaces:
+- benchmark table: logical equivalence, answer accuracy, solver-executable rate, ECE, AURC, semantic-error AUROC;
+- selective-policy table at **80%, 90%, and 95% coverage**;
+- semantic-error taxonomy table;
+- ablation table;
+- efficiency/intervention table;
+- cross-model and cross-dataset calibration-transfer table;
+- risk–coverage curve and translation-risk reliability diagram;
+- uncertainty-component diagnostic figure;
+- reliability–cost frontier.
+
+After real runs create `results/per_example.csv`:
+
+```bash
+python scripts/build_result_artifacts.py --input results/per_example.csv
+pip install -e ".[plot]"
+python scripts/plot_results.py
+```
+
+`src/usembridge/results.py` implements result aggregation, fixed-coverage evaluation, semantic-error breakdowns, component-level error-detection AUROC, paired bootstrap confidence intervals, and an exact McNemar test for paired binary outcomes.
+
+No analysis script is allowed to manufacture missing performance values: absent empirical inputs should fail loudly rather than generate synthetic manuscript results.
 
 ## Reproducibility
 
@@ -76,16 +103,22 @@ Final paper tables/figures must be generated programmatically from machine-reada
 configs/              model/dataset/experiment configs
 schemas/              CIR + run-manifest schemas
 data/                 manifests + ignored raw/processed data
-docs/                 research and reproducibility protocol
+docs/                 research, evidence, and reproducibility protocols
 examples/             auditable CIR examples
 paper/                manuscript synchronization notes during pre-results stage
-scripts/              setup/data/baseline/smoke workflows
+results/              versioned schemas/templates + generated result contract
+scripts/              setup/data/baseline/result/plot workflows
 src/usembridge/       reusable implementation
 tests/                unit tests
+artifacts/figures/     generated manuscript-ready plots (ignored until frozen)
 .github/workflows/    CPU CI
 ```
 
 The full evolving manuscript remains in the dedicated Overleaf/paper package until results are frozen, to avoid maintaining a stale duplicate. At submission/release time, the exact manuscript source will be synchronized under `paper/` with the matching code commit.
+
+## Evidence discipline
+
+`docs/CLAIMS_AND_EVIDENCE.md` maps each manuscript claim to the empirical evidence required before it can be stated as a result. `docs/RESULTS_CHECKLIST.md` is the submission gate. Claims without evidence remain hypotheses or planned evaluations.
 
 ## Non-claims
 
