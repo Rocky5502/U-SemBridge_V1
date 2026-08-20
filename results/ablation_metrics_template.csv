@@ -1,0 +1,2 @@
+run_id,dataset,model,variant,le,aurc,semantic_error_rate,high_confidence_wrong,cost,seed
+RUN,DATASET,MODEL,full,,,,,,42
