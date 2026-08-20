@@ -1,0 +1,2 @@
+run_id,dataset,model,method,n_examples,le,answer_accuracy,semantic_error_rate,executable_rate,ece,aurc,error_auroc,seed
+RUN,FOLIO,MODEL,METHOD,,,,,,,,,42
