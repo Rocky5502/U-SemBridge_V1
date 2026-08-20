@@ -66,7 +66,7 @@ See `docs/EXPERIMENTS.md`, `docs/PROJECT_PLAN.md`, `docs/RESULTS_PROTOCOL.md`, a
 
 ## V3 result pipeline
 
-The code now mirrors the manuscript's RQ-oriented Results section. Every final table or figure must originate from frozen machine-readable outputs.
+The code mirrors the manuscript's RQ-oriented Results section. Every final table or figure must originate from frozen machine-readable outputs.
 
 Primary result surfaces:
 - benchmark table: logical equivalence, answer accuracy, solver-executable rate, ECE, AURC, semantic-error AUROC;
@@ -79,13 +79,21 @@ Primary result surfaces:
 - uncertainty-component diagnostic figure;
 - reliability–cost frontier.
 
-After real runs create `results/per_example.csv`:
+After real runs create `results/per_example.csv`, use the complete analysis path:
 
 ```bash
+python scripts/validate_results.py --input results/per_example.csv
 python scripts/build_result_artifacts.py --input results/per_example.csv
 pip install -e ".[plot]"
 python scripts/plot_results.py
+python scripts/export_latex_tables.py
 ```
+
+Outputs are separated deliberately:
+- `results/*.csv` — real machine-readable empirical outputs, kept local/release-archived until frozen;
+- `results/*_template.csv` — versioned schemas for every manuscript table;
+- `artifacts/figures/*.pdf` — manuscript-ready plots generated from real results;
+- `artifacts/tables/*.tex` — LaTeX fragments exported from frozen result CSVs.
 
 `src/usembridge/results.py` implements result aggregation, fixed-coverage evaluation, semantic-error breakdowns, component-level error-detection AUROC, paired bootstrap confidence intervals, and an exact McNemar test for paired binary outcomes.
 
@@ -107,10 +115,11 @@ docs/                 research, evidence, and reproducibility protocols
 examples/             auditable CIR examples
 paper/                manuscript synchronization notes during pre-results stage
 results/              versioned schemas/templates + generated result contract
-scripts/              setup/data/baseline/result/plot workflows
+scripts/              setup/data/baseline/result/plot/table workflows
 src/usembridge/       reusable implementation
 tests/                unit tests
 artifacts/figures/     generated manuscript-ready plots (ignored until frozen)
+artifacts/tables/      generated LaTeX result fragments (ignored until frozen)
 .github/workflows/    CPU CI
 ```
 
