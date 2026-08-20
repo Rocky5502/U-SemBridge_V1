@@ -29,6 +29,12 @@ runs/
 artifacts/
 wandb/
 mlruns/
+
+# Real empirical result files stay local/release-archived until frozen.
+# Versioned CSV schemas/templates remain tracked.
+results/*.csv
+!results/*_template.csv
+
 paper/*.aux
 paper/*.bbl
 paper/*.blg
