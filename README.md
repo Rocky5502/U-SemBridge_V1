@@ -10,7 +10,7 @@ The project treats semantic translation as an uncertainty and assurance problem.
 
 Paper-in-progress for the IJUFKS special issue **Neuro-Symbolic Computing for Explainable, Ethical, and Interpretable Intelligent Systems**.
 
-**Pre-experiment status:** code, configs, data acquisition, tests, CI, and paper source are prepared. Numerical results remain intentionally TBD until real runs are completed.
+**Pre-experiment status:** code, configs, data acquisition, tests, CI, and reproducibility controls are prepared. Numerical results remain intentionally TBD until real runs are completed.
 
 ## Core claim to test
 
@@ -42,7 +42,9 @@ pip install -e ".[llm]"
 
 ## Data and baselines
 
-Raw third-party datasets are not vendored. Fetch them reproducibly:
+Raw third-party datasets are not vendored. This is intentional: it avoids silently redistributing external data and makes exact upstream provenance reproducible.
+
+Fetch them locally:
 
 ```bash
 python scripts/download_datasets.py --all
@@ -72,19 +74,25 @@ Final paper tables/figures must be generated programmatically from machine-reada
 
 ```text
 configs/              model/dataset/experiment configs
-schemas/              CIR JSON schema
+schemas/              CIR + run-manifest schemas
 data/                 manifests + ignored raw/processed data
 docs/                 research and reproducibility protocol
 examples/             auditable CIR examples
-paper/                IJUFKS manuscript source
+paper/                manuscript synchronization notes during pre-results stage
 scripts/              setup/data/baseline/smoke workflows
 src/usembridge/       reusable implementation
 tests/                unit tests
 .github/workflows/    CPU CI
 ```
 
+The full evolving manuscript remains in the dedicated Overleaf/paper package until results are frozen, to avoid maintaining a stale duplicate. At submission/release time, the exact manuscript source will be synchronized under `paper/` with the matching code commit.
+
 ## Non-claims
 
 Before real experiments, this repository does not claim superiority over baselines, legal correctness on real cases, calibrated uncertainty on unseen domains, successful human-expert evaluation, or final IJUFKS formatting.
 
-See `THIRD_PARTY.md` for dataset/baseline handling and `CITATION.cff` for citation metadata.
+## License status
+
+A software license has **not** been selected yet. That is an intentional project-owner decision rather than something automated by this scaffold. Third-party data/code retain their upstream licenses; see `THIRD_PARTY.md`.
+
+See `CITATION.cff` for provisional citation metadata.

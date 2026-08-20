@@ -42,7 +42,9 @@ class RiskComponents:
     solver_sensitivity: float
 
     def clipped(self) -> "RiskComponents":
-        clip = lambda x: max(0.0, min(1.0, float(x)))
+        def clip(value: float) -> float:
+            return max(0.0, min(1.0, float(value)))
+
         return RiskComponents(
             clip(self.grounding),
             clip(self.structural),
